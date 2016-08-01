@@ -1,2 +1,5 @@
 #ignore config of database
 /newAdmin/Common/Conf
+
+#ignore some Mac os file
+/.idea
