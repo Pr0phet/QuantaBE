@@ -3,3 +3,6 @@
 
 #ignore some Mac os file
 /.idea
+
+#ignore log files
+/newAdmin/Runtime
