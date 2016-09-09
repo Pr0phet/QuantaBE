@@ -6,3 +6,6 @@
 
 #ignore log files
 /newAdmin/Runtime
+
+#ignore upload files
+/Public/upload
