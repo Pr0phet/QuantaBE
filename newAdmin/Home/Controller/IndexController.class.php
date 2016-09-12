@@ -5,35 +5,57 @@ use Think\Upload;
 
 class IndexController extends Controller
 {
+
+    /**
+     * @name 检查登陆状态
+     * @global  $_SESSION['validate']
+     * @return 已登陆 返回用户名  未登陆(0)
+     */
     public function check()
     {
-        if(isset($_SESSION['validate']) && $_SESSION['validate'] == 1)
+        if($_SESSION['validate'] == 1)
         {
-            $this -> ajaxReturn('0');
+            echo '0';
         }
         else
         {
-            $this-> ajaxReturn('1');
+            echo $_SESSION['name'];
         }
     }//检查登录状况
 
-    private function login($user,$pass)
+
+    /**
+     * @name 登陆操作
+     * @param POST(user) 账号
+     * @param POST(pass) 密码
+     * @return 密码正确(1) 密码错误 (0)
+     */
+    private function login()
     {
+        $user = I('post.user');
+        $pass = I('post.pass');
         $admin = M('admin');
         $condition['name'] = $user;
         $res = $admin -> WHERE($condition) -> find();
         if($res['password'] != $pass)
         {
-            $this -> ajaxReturn('0'); //密码错误
+            echo '0'; //密码错误
         }
         else
         {
             $_SESSION['validate'] = 1;
             $_SESSION['name'] = $user;
-            $this -> ajaxReturn('1');//正确
+            echo '1';//正确
         }
     }//登录操作
 
+    /**
+     * @name 新增banner
+     * @param POST(title) 标题
+     * @param POST(url) 添加链接
+     * @param POST(remarks) 备注
+     * @return 新增成功 1 新增失败 0
+     */
     public function addBanner()
     {
         $title = I('post.title');
@@ -56,6 +78,11 @@ class IndexController extends Controller
         }
     }//新增banner
 
+    /**
+     * @name 获取所有banner
+     * @return 所有banner的信息(ajax方式)
+     * @return 返回的结构为$res['*'] *包括字段 id，title，picurl，url，createtime
+     */
     public function getBanner()
     {
         $banner = M('banner');
@@ -63,14 +90,21 @@ class IndexController extends Controller
         $this -> ajaxReturn($res);
     }//获取所有banner信息
 
-    public function rmBanner($id)
+    /**
+     * @name 删除banner
+     * @param POST(id) PS:此id为之前获取banner时发送的id
+     * @return 查询数据库失败(00) 操作数据库失败(01) 成功(1)
+     */
+    public function rmBanner()
     {
+        $id = I('post.id');
         $banner = M('banner');
         $file = $banner -> WHERE("id = $id") -> find();
         $res = unlink($file['picurl']);
         if(!$res)
         {
-            echo '发生错误,请联系管理员';
+            echo '00';
+            exit();
         }
         $res = $banner -> WHERE("id= $id") -> delete();
         if($res)
@@ -79,10 +113,15 @@ class IndexController extends Controller
         }
         else
         {
-            echo '删除失败,请联系管理员';
+            echo '01';
         }
     }//删除banner
 
+    /**
+     * @name 删除单文件|清空文件夹内的文件并删除文件夹
+     * @param $filepath 文件夹路径
+     * @return 成功string（已删除$filepath） 失败string(WrongUrl)
+     */
     private function deldir($filepath)
     {
         if(is_dir($filepath))
@@ -103,10 +142,19 @@ class IndexController extends Controller
             unlink($filepath);
             echo "已删除文件";
         }
+        else
+        {
+            echo "WrongUrl";
+        }
     }//删除文件或文件夹！慎用！
 
     //---------------------WangEditor处理函数-----------------
 
+    /**
+     * @name 标题下的上传图片
+     * @param $type 图片分类
+     * @return mixed 二维数组0为数据库链接，1为上传文件信息
+     */
     private function uploadImg($type)
     {
         $db = M("$type");
@@ -134,6 +182,12 @@ class IndexController extends Controller
         }
     }//标题下的上传文件
 
+    /**
+     * @name WangEditor在文中插入图片
+     * @param 在WangEditor中的参数传输（type）图片类型
+     * @param 在WangEditor中的参数传输（code）表单ID
+     * @return 上传成功文件url
+     */
     public function addimg()
     {
         $type = $_REQUEST['type'];//图片类型位置
@@ -165,6 +219,13 @@ class IndexController extends Controller
     }//文中新增图片
 
 
+    /**
+     * @name 正式保存时的图片url处理
+     * @param $verify_code 表单id
+     * @param $content 代码形式的内容
+     * @param $type 保存类型
+     * @return mixed 修改过url的代码内容
+     */
     private function saveimg($verify_code,$content,$type)
     {
         $pattern = "\/$verify_code\/";
@@ -184,6 +245,14 @@ class IndexController extends Controller
         return $content;
     }//保存时转移img
 
+    /**
+     * @name WangEditor正式保存 || 新增动态的保存
+     * @param POST(title) 标题
+     * @param POST(type) 内容类型
+     * @param POST(vc) 表单ID
+     * @param POST(content) 内容（html代码形式）
+     * @return 成功(1) 上传图片失败(00) 新增数据错误(01)
+     */
     public function saveAll()
     {
         $title = I('post.title');
@@ -206,7 +275,7 @@ class IndexController extends Controller
             $res = $upload -> uploadOne($_FILES['pic']);
             if(!$res)
             {
-                echo '0';
+                echo '00';
                 exit();
             }
             $picurl = $res['savepath'].$res['savename'];
@@ -219,7 +288,7 @@ class IndexController extends Controller
         $feed = $db -> add($data);
         if(!$feed)
         {
-            echo 'fail';
+            echo '01';
         }
         else
         {
@@ -231,6 +300,15 @@ class IndexController extends Controller
 
     //---------------------WangEditor处理函数-----------------
 
+    /**
+     * @name 更新官网联系人
+     * @param POST(name) 姓名
+     * @param POST(qq) QQ
+     * @param POST(mail) 邮箱
+     * @param POST(tel) 联系号码
+     * @param POST(shorttel)若无请勿POST
+     * @return 成功(1) 失败(0)
+     */
     public function primerman()
     {
         $raw = I('post.',NULL); //接收数据
@@ -245,41 +323,42 @@ class IndexController extends Controller
         $res = $db -> add($data);
         if($res)
         {
-            $this -> ajaxReturn('1');
+            echo '1';
         }
         else
         {
-            $this -> ajaxReturn('0');
+            echo '0';
         }
     }//新增联系人
 
-    public function addNews()
+    /**
+     * @name 删除动态
+     * @param POST(id) 之前传输的动态id
+     * @return 成功(1) 失败(0)
+     */
+    public function rmNews()
     {
-        $raw = I('post.');
-
-        $data = array(
-            'title' => $raw['title'],
-            'pic' => I('post.',NULL),
-            'content'
-        );
-    }//新增动态
-
-    public function rmNews($id)
-    {
+        $id = I('post.id');
         $news = M('news');
         $res = $news -> WHERE('id ='.$id) -> delete();
         if($res)
         {
-            $this -> ajaxReturn('Success');
+            echo 'Success';
         }
         else
         {
-            $this -> error('删除失败，请联系管理员');
+            echo '删除失败，请联系管理员';
         }
     }//删除动态
 
-    public function getNews($flag)
+    /**
+     * @name 获取所有同台
+     * @param POST(flag) 是否为草稿 是(1) 否(0)
+     * @return 数组，字段('id','title','picurl,'url',createtime)分别是(动态id：删除用，标题，图片链接，网站链接，创建时间)
+     */
+    public function getNews()
     {
+        $flag = I('post.flag');
         $flag = $flag ? 1 : 0;
         $news = M('news');
         $conditon['draft'] = $flag;
@@ -287,9 +366,17 @@ class IndexController extends Controller
         $this -> ajaxReturn($res);
     }//获取动态
 
-    public function search($key)
+    /**
+     * @name 查询关键字
+     * @param POST(type) 查询类别
+     * @param POST(key) 关键字
+     * @return 成功 数组，字段('id'....)类别不同查询不同，详情Debug的时候可以商量 失败(0)
+     */
+    public function search()
     {
-        $news = M('news');
+        $key = I('post.key');
+        $type = I('post.type');
+        $news = M($type);
         $condition['title'] = array('like','%'.$key.'%');
 //        $condition['contant'] = array('like','%'.$key.'%');
 //        $condition['_logic'] = 'OR';
@@ -300,21 +387,36 @@ class IndexController extends Controller
         }
         else
         {
-            $this -> ajaxReturn('0');
+            echo '0';
         }
     }//在标题模糊搜索
 
-    public function drafts($target)
+    /**
+     * @name 保存为草稿
+     * @param 与saveALL方法参数一样
+     */
+    public function drafts()
     {
         $data['draft'] = 1;
-        if($target == 'news')
         $this -> saveAll();
     }//调用之前的存储方法
 
+    /**
+     * @name 项目中心的保存
+     * @param POST(title) 标题
+     * @param POST(date) 日期
+     * @param POST(link)
+     * @param POST(tool)
+     * @param POST(type)
+     * @param POST(developer)
+     * @param POST(vcc)
+     * @param POST(content)
+     * @return 成功(1) 失败(0)
+     */
     public function saveProject()
     {
         $title = I('post.title');
-        $ddl = I('post.ddl',NULL);
+        $date = I('post.date',NULL);
         $link = I('post.link',NULL);
         $tool = I('post.tool',NULL);
         $type = I('post.type');
@@ -323,7 +425,7 @@ class IndexController extends Controller
         $content = I('post.content');
         $content = $this -> saveimg($verify_code,$content,$type);
         $data['title'] = $title;
-        $data['ddl'] = $ddl;
+        $data['date'] = $date;
         $data['url'] = $link;
         $data['tool'] = $tool;
         $data['developer'] = $developer;
@@ -340,6 +442,12 @@ class IndexController extends Controller
         }
     }//保存项目中心
 
+    /**
+     * @name 新增成员时返回届数和上传照片
+     * @param POST(grade) 届数
+     * @param POST(dep) 部门
+     * @return 数组，字段('grade','dep','url'),（届数，部门，图片url(数组)）
+     */
     public function addMember()
     {
         $grade = I('post.grade');
@@ -358,12 +466,19 @@ class IndexController extends Controller
         $this -> ajaxReturn($data);
     }//返回一开始的届数和部门
 
+    /**
+     * @name 保存部门成员
+     * @param POST(num) 保存人数
+     * @param POST(raw) 这个是将每名成员的数据单独打包成一个组，内应有name,pic,grade,dep,pos,remark(名称，图片URL，届数，部门，职位，备注:可空)
+     * @return 成功(1) 失败(0)
+     */
     public function saveMember()
     {
         $num = I('post.num');
         $content = I('post.raw');
         $content = json_decode($content,TRUE);
         $db = M('member');
+        $res = NULL;
         for($i = 0; $i < $num; $i++) {
             $data['name'] = $content[$i]['name'];
             $data['pic'] = $content[$i]['pic'];
@@ -376,6 +491,11 @@ class IndexController extends Controller
         echo $res ? 1 : 0;
     }//保存部门成员
 
+    /**
+     * @name 获取某个管理层信息
+     * @param POST(id) 该成员的ID
+     * @return 数组，字段（'id','name','sex','grade','dep','pos','remark'）,（id，姓名，性别：新成员为空，届数，部门，职位，备注）
+     */
     public function showMember()
     {
         $id = I('post.id');
@@ -384,6 +504,18 @@ class IndexController extends Controller
         $this -> ajaxReturn($res);
     }//提取人员信息
 
+    /**
+     * @name 更新成员信息
+     * @param POST(id) 成员id
+     * @param POST(name) 名称
+     * @param POST(sex) 性别
+     * @param POST(pos) 职位
+     * @param POST(dep) 部门
+     * @param POST(grade) 届数
+     * @param POST(year) 年级
+     * @param POST(remark) 备注
+     * @return 成功(1) 失败(0)
+     */
     public function updateMember()
     {
         $id = I('post.id');
@@ -399,6 +531,11 @@ class IndexController extends Controller
         echo $res ? 1 : 0;
     }//更新人员
 
+    /**
+     * @name 删除人员
+     * @param POST(id) 人员ID
+     * @return 成功(1) 失败(0)
+     */
     public function delMember()
     {
         $id = I('post.id');
@@ -407,6 +544,10 @@ class IndexController extends Controller
         echo $res ? 1 : 0;
     }//删除人员
 
+    /**
+     * @name 提取所有人员信息
+     * @return 二维数组，字段('id','name','sex','grade','dep','pos','remark'),(id，姓名，性别，届数，部门，职位，备注)
+     */
     public function showAllMember()
     {
         $db = M('member');
