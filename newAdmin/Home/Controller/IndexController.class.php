@@ -15,11 +15,11 @@ class IndexController extends Controller
     {
         if($_SESSION['validate'] == 1)
         {
-            echo '0';
+            $this -> ajaxReturn('0');
         }
         else
         {
-            echo $_SESSION['name'];
+            $this -> ajaxReturn($_SESSION['name']);
         }
     }//检查登录状况
 
@@ -39,13 +39,13 @@ class IndexController extends Controller
         $res = $admin -> WHERE($condition) -> find();
         if($res['password'] != $pass)
         {
-            echo '0'; //密码错误
+            $this -> ajaxReturn('0'); //密码错误
         }
         else
         {
             $_SESSION['validate'] = 1;
             $_SESSION['name'] = $user;
-            echo '1';//正确
+            $this -> ajaxReturn('1');//正确
         }
     }//登录操作
 
@@ -70,11 +70,11 @@ class IndexController extends Controller
         $feed = $res[0] -> add($data);
         if(!$feed)
         {
-            echo '0';
+            $this -> ajaxReturn('0');
         }
         else
         {
-            echo '1';
+            $this -> ajaxReturn('1');
         }
     }//新增banner
 
@@ -109,11 +109,11 @@ class IndexController extends Controller
         $res = $banner -> WHERE("id= $id") -> delete();
         if($res)
         {
-            echo "1";
+            $this -> ajaxReturn("1");
         }
         else
         {
-            echo '01';
+            $this -> ajaxReturn('01');
         }
     }//删除banner
 
@@ -133,18 +133,18 @@ class IndexController extends Controller
                     unlink($filepath.$file); //删除文件
                 }
                 rmdir($filepath);
-                echo "已删除$filepath";
+                $this -> ajaxReturn("已删除$filepath");
             }
         }
         else if(is_file($filepath))
         {
 
             unlink($filepath);
-            echo "已删除文件";
+            $this -> ajaxReturn("已删除文件");
         }
         else
         {
-            echo "WrongUrl";
+            $this -> ajaxReturn("WrongUrl");
         }
     }//删除文件或文件夹！慎用！
 
@@ -207,13 +207,13 @@ class IndexController extends Controller
         $res = $upload ->upload();
         if(!$res)
         {
-            echo $upload->getError(); //上传失败
+            $this -> ajaxReturn($upload->getError()); //上传失败
         }
         else
         {
             foreach($res as $file)
             {
-                echo '../../newAdmin/'.$config['rootPath'].$config['savePath'].$verify_code.'/'.$file['savename'];//上传成功返回图片地址
+                $this -> ajaxReturn('../../newAdmin/'.$config['rootPath'].$config['savePath'].$verify_code.'/'.$file['savename']);//上传成功返回图片地址
             }
         }
     }//文中新增图片
@@ -288,12 +288,12 @@ class IndexController extends Controller
         $feed = $db -> add($data);
         if(!$feed)
         {
-            echo '01';
+            $this -> ajaxReturn('01');
         }
         else
         {
             $this -> deldir($config['rootPath'].$config['savePath'].$verify_code);
-            echo '1';
+            $this -> ajaxReturn('1');
         }
     }
 
@@ -323,11 +323,11 @@ class IndexController extends Controller
         $res = $db -> add($data);
         if($res)
         {
-            echo '1';
+            $this -> ajaxReturn('1');
         }
         else
         {
-            echo '0';
+            $this -> ajaxReturn('0');
         }
     }//新增联系人
 
@@ -343,11 +343,11 @@ class IndexController extends Controller
         $res = $news -> WHERE('id ='.$id) -> delete();
         if($res)
         {
-            echo 'Success';
+            $this -> ajaxReturn('Success');
         }
         else
         {
-            echo '删除失败，请联系管理员';
+            $this -> ajaxReturn('删除失败，请联系管理员');
         }
     }//删除动态
 
@@ -387,7 +387,7 @@ class IndexController extends Controller
         }
         else
         {
-            echo '0';
+            $this -> ajaxReturn('0');
         }
     }//在标题模糊搜索
 
@@ -434,11 +434,11 @@ class IndexController extends Controller
         $res = $db -> add($data);
         if($res)
         {
-            echo '1';
+            $this -> ajaxReturn('1');
         }
         else
         {
-            echo '0';
+            $this -> ajaxReturn('0');
         }
     }//保存项目中心
 
@@ -488,7 +488,7 @@ class IndexController extends Controller
             $data['remark'] = $content[$i]['remark'];
             $res = $db->add($data);
         }
-        echo $res ? 1 : 0;
+        $this -> ajaxReturn($res ? 1 : 0);
     }//保存部门成员
 
     /**
@@ -528,7 +528,7 @@ class IndexController extends Controller
         $data['remark'] = I('post.remark');
         $db = M('member');
         $res = $db -> WHERE("id = $id") -> save($data);
-        echo $res ? 1 : 0;
+        $this -> ajaxReturn($res ? 1 : 0);
     }//更新人员
 
     /**
@@ -541,7 +541,7 @@ class IndexController extends Controller
         $id = I('post.id');
         $db = M('member');
         $res = $db -> WHERE("id = $id") -> delete();
-        echo $res ? 1 : 0;
+        $this -> ajaxReturn($res ? 1 : 0);
     }//删除人员
 
     /**
